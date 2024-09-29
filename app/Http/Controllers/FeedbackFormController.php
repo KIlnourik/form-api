@@ -29,9 +29,9 @@ class FeedbackFormController extends Controller
 
         $validated = $validator->validate();
 
-        Mail::to($value . '@example.com')->send(
-            new FormReceived($validated)
-        );
+//        Mail::to($value . '@example.com')->send(
+//            new FormReceived($validated)
+//        );
 
         return response($validated,200)
                         ->header('Content-Type', 'text/plain');
