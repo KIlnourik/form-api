@@ -22,31 +22,55 @@ class CheckRules
         'product' => ['required', 'string'],
     ];
 
+    /**
+     * @param string $profession
+     * @return bool
+     */
     public static function isStudent (string $profession): bool
     {
         return $profession === self::STUDENT_PROFESSION;
     }
 
+    /**
+     * @param string $product
+     * @return bool
+     */
     public static function isPromo (string $product): bool
     {
         return $product === self::PROMO_PRODUCT;
     }
 
+    /**
+     * @param string $product
+     * @return bool
+     */
     public static function isSpecial (string $product): bool
     {
         return $product === self::SPECIAL_PRODUCT;
     }
 
+    /**
+     * @param string $region
+     * @return bool
+     */
     public static function isCenter (string $region): bool
     {
         return in_array($region, self::CAPITALS);
     }
 
+    /**
+     * @param Request $request
+     * @return bool
+     */
     public static function hasAddress (Request $request): bool
     {
         return $request->has('address');
     }
 
+    /**
+     * @param array $formFields
+     * @return string
+     */
     public static function getInputs (array $formFields): string
     {
         if (isset($formFields['profession']) && CheckRules::isStudent($formFields['profession'])) {
@@ -64,6 +88,10 @@ class CheckRules
         return 'all';
     }
 
+    /**
+     * @param $value
+     * @return array|string[]
+     */
     public static function getValidatingInputs ($value): array
     {
         $map = [
@@ -76,16 +104,25 @@ class CheckRules
         return $map[$value] ?? [];
     }
 
+    /**
+     * @param string $value
+     * @param Request $request
+     * @return array
+     */
     public static function getValidationRules (string $value, Request $request): array
     {
         $rules = array();
 
-        foreach (self::getValidatingInputs($value) as $input) {
+        $inputs = self::getValidatingInputs($value);
+        foreach ($inputs as $input) {
             $rules = Arr::add($rules, $input, self::VALIDATING_RULES[$input]);
         }
 
-        self::hasAddress($request) &&
-        $rules = Arr::add($rules, 'address', self::VALIDATING_RULES['address']);
+        self::hasAddress($request)
+            && $rules = Arr::add($rules, 'address', self::VALIDATING_RULES['address']);
+
+        (self::isSpecial($request['product']) && !in_array('product', $inputs))
+            && $rules = Arr::add($rules, 'product', self::VALIDATING_RULES['product']);
 
         return $rules;
     }

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Classes\CheckRules;
-use App\Classes\FeedbackForm;
+use App\Classes\MailAddresses;
 use App\Mail\FormReceived;
 use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
@@ -29,17 +29,18 @@ class FeedbackFormController extends Controller
 
         $validated = $validator->validate();
 
+        $mailAddresses = MailAddresses::getMailAddresses(
+            request(),
+            $value,
+            CheckRules::isSpecial(request()->get('product')),
+            CheckRules::hasAddress(request()),
+        );
 
-        CheckRules::hasAddress(request())
-            ? Mail::to($validated['address'])->send(
-                new FormReceived(Arr::except($validated, 'address')))
-            : Mail::to($value . '@example.com')->send(
-                  new FormReceived($validated));
+        CheckRules::hasAddress(request()) && $validated = Arr::except($validated, 'address');
 
-        return CheckRules::hasAddress(request())
-            ? response(Arr::except($validated, 'address'),200)
-                        ->header('Content-Type', 'text/plain')
-            : response($validated,200)
+        Mail::to($mailAddresses)->send(new FormReceived($validated));
+
+        return  response('Your form has successfully received!',200)
                         ->header('Content-Type', 'text/plain');
     }
 }
