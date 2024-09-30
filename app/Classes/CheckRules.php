@@ -2,6 +2,7 @@
 
 namespace App\Classes;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 
 class CheckRules
@@ -15,8 +16,8 @@ class CheckRules
         'name' => ['required', 'string', 'min:3', 'max:255'],
         'email' => ['required', 'email'],
         'phone' => ['required', 'string'],
-        'address' => ['string'],
-        'profession' => ['string'],
+        'address' => ['string', 'email'],
+        'profession' => ['nullable','string'],
         'region' => ['required', 'string'],
         'product' => ['required', 'string'],
     ];
@@ -41,6 +42,28 @@ class CheckRules
         return in_array($region, self::CAPITALS);
     }
 
+    public static function hasAddress (Request $request): bool
+    {
+        return $request->has('address');
+    }
+
+    public static function getInputs (array $formFields): string
+    {
+        if (isset($formFields['profession']) && CheckRules::isStudent($formFields['profession'])) {
+            return 'student';
+        }
+
+        if (isset($formFields['region']) && CheckRules::isCenter($formFields['region'])) {
+            return 'center';
+        }
+
+        if (isset($formFields['product']) && CheckRules::isPromo($formFields['product'])) {
+            return 'promo';
+        }
+
+        return 'all';
+    }
+
     public static function getValidatingInputs ($value): array
     {
         $map = [
@@ -53,13 +76,16 @@ class CheckRules
         return $map[$value] ?? [];
     }
 
-    public static function getValidationRules ($value): array
+    public static function getValidationRules (string $value, Request $request): array
     {
         $rules = array();
 
         foreach (self::getValidatingInputs($value) as $input) {
             $rules = Arr::add($rules, $input, self::VALIDATING_RULES[$input]);
         }
+
+        self::hasAddress($request) &&
+        $rules = Arr::add($rules, 'address', self::VALIDATING_RULES['address']);
 
         return $rules;
     }
